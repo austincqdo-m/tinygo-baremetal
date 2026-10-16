@@ -1,0 +1,6 @@
+{
+	"inherits": ["aarch64-baremetal"],
+	"build-tags": ["qemu", "virt"],
+	"linkerscript": "targets/qemu-aarch64-virt.ld",
+	"emulator": "qemu-system-aarch64 -machine virt -cpu cortex-a53 -smp 1 -m 128M -nographic -semihosting-config enable=on -kernel {}"
+}
