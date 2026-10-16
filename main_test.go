@@ -555,6 +555,11 @@ func TestBuild(t *testing.T) {
 			runPlatTests(optionsFromTarget("riscv-qemu", sema), tests, t)
 		})
 
+		t.Run("EmulatedAArch64", func(t *testing.T) {
+			t.Parallel()
+			runPlatTests(optionsFromTarget("qemu-aarch64-virt", sema), tests, t)
+		})
+
 		t.Run("AVR", func(t *testing.T) {
 			t.Parallel()
 			runPlatTests(optionsFromTarget("simavr", sema), tests, t)
@@ -675,7 +680,7 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 	// isWebAssembly := strings.HasPrefix(spec.Triple, "wasm")
 	isWASI := strings.HasPrefix(options.Target, "wasi")
 	isWebAssembly := isWASI || strings.HasPrefix(options.Target, "wasm") || (options.Target == "" && strings.HasPrefix(options.GOARCH, "wasm"))
-	isBaremetal := options.Target == "simavr" || options.Target == "cortex-m-qemu" || options.Target == "riscv-qemu"
+	isBaremetal := options.Target == "simavr" || options.Target == "cortex-m-qemu" || options.Target == "riscv-qemu" || options.Target == "qemu-aarch64-virt"
 	_, goMinor, err := goenv.GetGorootVersion()
 	if err != nil {
 		t.Fatal("could not get version:", goMinor)
@@ -705,6 +710,18 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			if name == "cgo/" {
 				// CGo isn't supported yet on big-endian systems (needs updates
 				// to bitfield access methods).
+				continue
+			}
+		}
+		if options.Target == "qemu-aarch64-virt" {
+			// Task 1.1 brings up the bare-metal AArch64 target with no
+			// scheduler and no interrupts yet. Only the single-core
+			// programs that need neither are run for now. Later tasks
+			// widen this list.
+			switch name {
+			case "print.go", "float.go", "structs.go", "map.go",
+				"slice.go", "string.go", "gc.go":
+			default:
 				continue
 			}
 		}
@@ -806,7 +823,7 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			runTest(name, testOptions, t, nil, nil)
 		})
 	}
-	if !strings.HasPrefix(spec.Emulator, "simavr ") {
+	if !strings.HasPrefix(spec.Emulator, "simavr ") && options.Target != "qemu-aarch64-virt" {
 		t.Run("env.go", func(t *testing.T) {
 			t.Parallel()
 			runTest("env.go", options, t, []string{"first", "second"}, []string{"ENV1=VALUE1", "ENV2=VALUE2"})
@@ -832,10 +849,13 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			runTest("rand.go", options, t, nil, nil)
 		})
 	}
-	t.Run("recover.go", func(t *testing.T) {
-		t.Parallel()
-		runTest("recover.go", options, t, nil, nil)
-	})
+	if options.Target != "qemu-aarch64-virt" {
+		// recover.go starts a goroutine, which needs a scheduler (task 1.3).
+		t.Run("recover.go", func(t *testing.T) {
+			t.Parallel()
+			runTest("recover.go", options, t, nil, nil)
+		})
+	}
 	if isWebAssembly {
 		t.Run("recover-explicit.go", func(t *testing.T) {
 			t.Parallel()
