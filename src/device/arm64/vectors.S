@@ -204,6 +204,7 @@ exceptionEntry:
     eret
 
 .section .bss
+.balign 8
 .global tinygo_exception_kind
 .type tinygo_exception_kind, @object
 tinygo_exception_kind:
