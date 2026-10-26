@@ -2,6 +2,12 @@ ENTRY(_start)
 
 SECTIONS
 {
+    .vectors :
+    {
+        . = ALIGN(2048);
+        KEEP(*(.vectors))
+    } >FLASH_TEXT
+
     .text :
     {
         . = ALIGN(16);

@@ -26,7 +26,8 @@
 	"extra-files": [
 		"src/device/arm64/start.S",
 		"src/internal/task/task_stack_arm64.S",
-		"src/runtime/asm_arm64.S"
+		"src/runtime/asm_arm64.S",
+		"src/device/arm64/vectors.S"
 	],
 	"gdb": ["gdb-multiarch", "aarch64-unknown-elf-gdb", "gdb"]
 }
