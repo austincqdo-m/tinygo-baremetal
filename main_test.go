@@ -854,6 +854,17 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			runTest("recover.go", options, t, nil, nil)
 		})
 	}
+	if options.Target == "qemu-aarch64-virt" {
+		// Interrupt tests are specific to this target and are not in the
+		// shared test list, so run them explicitly.
+		for _, name := range []string{"interrupt-sgi.go", "interrupt-disable.go", "interrupt-nested.go", "interrupt-uart.go"} {
+			name := name
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				runTest(name, options, t, nil, nil)
+			})
+		}
+	}
 	if isWebAssembly {
 		t.Run("recover-explicit.go", func(t *testing.T) {
 			t.Parallel()
@@ -1625,6 +1636,44 @@ func TestRuntimeFatal(t *testing.T) {
 	}
 	if strings.Contains(output.String(), "recovered:") {
 		t.Fatalf("fatal runtime error was recovered:\n%s", output.String())
+	}
+}
+
+// TestAArch64Faults checks that synchronous exceptions on qemu-aarch64-virt
+// are reported as panics with the decoded exception class and faulting
+// address, instead of hanging. The programs exit non-zero via abort.
+func TestAArch64Faults(t *testing.T) {
+	t.Parallel()
+
+	options := optionsFromTarget("qemu-aarch64-virt", sema)
+	emuCheck(t, options)
+	config, err := builder.NewConfig(&options)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		want string
+	}{
+		{"aarch64-fault-data.go", "FAR=0x80000000"},
+		{"aarch64-fault-data.go", "Data Abort"},
+		{"aarch64-fault-ud.go", "EC=0 (Unknown)"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+"/"+tc.want, func(t *testing.T) {
+			t.Parallel()
+			output := &bytes.Buffer{}
+			_, err = buildAndRun(TESTDATA+"/"+tc.name, config, output, nil, nil, time.Minute, func(cmd *exec.Cmd, result builder.BuildResult) error {
+				return cmd.Run()
+			})
+			if err == nil {
+				t.Fatalf("program unexpectedly exited successfully; output:\n%s", output.String())
+			}
+			if !strings.Contains(output.String(), tc.want) {
+				t.Fatalf("output does not contain %q:\n%s", tc.want, output.String())
+			}
+		})
 	}
 }
 
