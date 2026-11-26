@@ -714,11 +714,13 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			}
 		}
 		if options.Target == "qemu-aarch64-virt" {
-			// The bare-metal AArch64 runtime has no scheduler or interrupts.
-			// Run only single-core programs that need neither.
+			// Single-core scheduler and timer interrupts are
+			// implemented; multicore and MMU support are not yet.
 			switch name {
 			case "print.go", "float.go", "structs.go", "map.go",
-				"slice.go", "string.go", "gc.go":
+				"slice.go", "string.go", "gc.go",
+				"goroutines.go", "channel.go", "timers.go",
+				"atomic.go":
 			default:
 				continue
 			}
