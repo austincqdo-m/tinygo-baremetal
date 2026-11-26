@@ -714,13 +714,13 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			}
 		}
 		if options.Target == "qemu-aarch64-virt" {
-			// Single-core scheduler and timer interrupts are
-			// implemented; multicore and MMU support are not yet.
+			// Single-core scheduler, timer interrupts, and the
+			// MMU are implemented; multicore support is not yet.
 			switch name {
 			case "print.go", "float.go", "structs.go", "map.go",
 				"slice.go", "string.go", "gc.go",
 				"goroutines.go", "channel.go", "timers.go",
-				"atomic.go":
+				"atomic.go", "mmu-registers.go":
 			default:
 				continue
 			}
@@ -1661,6 +1661,9 @@ func TestAArch64Faults(t *testing.T) {
 		{"aarch64-fault-data.go", "FAR=0x80000000"},
 		{"aarch64-fault-data.go", "Data Abort"},
 		{"aarch64-fault-ud.go", "EC=0 (Unknown)"},
+		{"aarch64-fault-code-write.go", "FAR=0x40000000"},
+		{"aarch64-fault-code-write.go", "Data Abort"},
+		{"aarch64-fault-exec-heap.go", "Instruction Abort"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name+"/"+tc.want, func(t *testing.T) {

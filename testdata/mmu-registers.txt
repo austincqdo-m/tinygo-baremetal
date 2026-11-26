@@ -1,0 +1,4 @@
+sctlr M: 1 C: 1 I: 1
+mair device: 0 normal: 255
+tcr t0sz: 16 tg0: 0 epd1: 1
+ttbr0 aligned: true
