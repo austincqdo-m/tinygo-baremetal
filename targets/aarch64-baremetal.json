@@ -7,7 +7,7 @@
 	"goarch": "arm64",
 	"build-tags": ["tinygo.aarch64", "baremetal"],
 	"gc": "conservative",
-	"scheduler": "none",
+	"scheduler": "tasks",
 	"linker": "ld.lld",
 	"rtlib": "compiler-rt",
 	"libc": "picolibc",

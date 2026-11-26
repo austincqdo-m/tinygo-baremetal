@@ -132,5 +132,6 @@ func init() {
 	})
 	arm64.Asm("isb")
 	gicInit()
+	initTimerInterrupt()
 	arm64.Asm("msr daifclr, #0xf")
 }
