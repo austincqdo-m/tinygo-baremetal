@@ -58,6 +58,11 @@ func preinit() {
 		dst = unsafe.Add(dst, 1)
 		src = unsafe.Add(src, 1)
 	}
+
+	// Enable the MMU and caches before any heap allocation or
+	// interrupt unmasking. The tables live outside .bss, and the
+	// mapping is identity, so no address changes under the code.
+	mmuInit()
 }
 
 //export main

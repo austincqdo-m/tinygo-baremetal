@@ -11,6 +11,7 @@ SECTIONS
     .text :
     {
         . = ALIGN(16);
+        _stext = .;        /* used by MMU setup: start of read-only code */
         KEEP(*(.init))
         . = ALIGN(16);
         *(.text)
@@ -18,6 +19,8 @@ SECTIONS
         *(.rodata)
         *(.rodata.*)
         . = ALIGN(16);
+        _etext = .;        /* used by MMU setup: end of read-only code */
+        . = ALIGN(4096);   /* code/data page boundary for MMU permissions */
     } >FLASH_TEXT
 
     /* Put the stack at the bottom of RAM, so that the application will
@@ -58,14 +61,31 @@ SECTIONS
         _ebss = .;         /* used by startup code */
     } >RAM
 
+    /* Page tables for the MMU. Outside .bss so startup BSS zeroing
+     * cannot erase tables built before main, and 4096 byte aligned
+     * as TTBR0_EL1 requires. Sized for one L0, one L1, two L2, and
+     * 32 L3 tables, enough for 64M of RAM at 4K pages. The heap
+     * starts after the tables. */
+    .pagetables (NOLOAD) :
+    {
+        . = ALIGN(4096);
+        _pagetables = .;   /* used by MMU setup */
+        KEEP(*(.pagetables))
+        . = ALIGN(4096);
+        _pagetables_end = .;
+    } >RAM
+
     /DISCARD/ :
     {
         *(.eh_frame)
     }
 }
 
-/* For the memory allocator. */
-_heap_start = ALIGN(_ebss, 16);
+/* Start of RAM, used by MMU setup as the identity map base. */
+_ram_start = ORIGIN(RAM);
+
+/* For the memory allocator. Page tables sit after .bss. */
+_heap_start = ALIGN(_pagetables_end, 16);
 _heap_end = ORIGIN(RAM) + LENGTH(RAM);
 _globals_start = _sdata;
 _globals_end = _ebss;
